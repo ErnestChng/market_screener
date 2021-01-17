@@ -10,7 +10,6 @@ yf.pdr_override()
 
 """
 https://towardsdatascience.com/making-a-stock-screener-with-python-4f591b198261
-https://algotrading101.com/learn/yahoo-finance-api-guide/
 """
 
 
@@ -23,7 +22,7 @@ class StockScreener:
         """
         Constructor for the Stock Screener object.
 
-        :param index_ticker: String representing the ticker for the index
+        :param index_ticker: String representing the ticker for the index (required for the calculation for RS rating)
         :param stock_list: List of Strings representing the stocks in the index
         """
         self.index_ticker = index_ticker
@@ -55,8 +54,6 @@ class StockScreener:
         :param index_return: Float representing the returns of the index
         :return: Float representing the RS ratings
         """
-        assert 'Adj Close' in df.columns, 'column Adj Close is missing from dataframe!'
-
         df['percent_change'] = df['Adj Close'].pct_change()
         stock_return = df['percent_change'].sum() * 100
 
@@ -80,7 +77,7 @@ class StockScreener:
         :param df: DataFrame representing the stock
         :return: Float representing the 50 Day SMA
         """
-        df['sma_50'] = round(df.iloc[:, 4].rolling(window=50).mean(), 2)
+        df['sma_50'] = round(df['Adj Close'].rolling(window=50).mean(), 2)
 
         return df['sma_50'][-1]
 
@@ -92,7 +89,7 @@ class StockScreener:
         :param df: DataFrame representing the stock
         :return: Float representing the latest value of the 150 Day SMA
         """
-        df['sma_150'] = round(df.iloc[:, 4].rolling(window=150).mean(), 2)
+        df['sma_150'] = round(df['Adj Close'].rolling(window=150).mean(), 2)
 
         return df['sma_150'][-1]
 
@@ -104,7 +101,7 @@ class StockScreener:
         :param df: DataFrame representing the stock
         :return: Float representing the latest value of the 200 Day SMA
         """
-        df['sma_200'] = round(df.iloc[:, 4].rolling(window=200).mean(), 2)
+        df['sma_200'] = round(df['Adj Close'].rolling(window=200).mean(), 2)
 
         return df['sma_200'][-1]
 
@@ -163,6 +160,8 @@ class StockScreener:
                 print(f"\npulling {stock} with index {counter}/{len_stock_list}")
                 df = pdr.get_data_yahoo(stock, start=self.start_date, end=self.end_date)
 
+                assert 'Adj Close' in df.columns, 'column Adj Close is missing from dataframe!'
+
                 rs_rating = self.get_rs_rating(df, index_return)
                 current_close = self.get_current_close(df)
                 sma_50 = self.get_sma_50(df)
@@ -209,9 +208,9 @@ class StockScreener:
 if __name__ == '__main__':
     index_ticker = '^GSPC'
     stock_list = si.tickers_sp500()
-    sc = StockScreener(index_ticker, stock_list)
 
+    sc = StockScreener(index_ticker, stock_list)
     df_interest = sc.get_stocks()
     print(df_interest)
 
-    df_interest.to_csv(f'screened_stocks.csv', index=False)
+    df_interest.to_csv(f'stock_screener_output.csv', index=False)
